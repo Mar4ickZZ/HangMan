@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joc: Găsește cuvântul</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Identificarea automată a cuvintelor</h1>
+    <input type="file" id="fileInput" accept=".csv" />
+    <button id="startButton">Începe jocul</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('startButton').addEventListener('click', startGame);
+
+        function startGame() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+
+            if (!fileInput.files.length) {
+                alert("Te rog să selectezi un fișier CSV.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                let totalAttempts = 0; // Variabila pentru a stoca numărul total de încercări
+
+                for (const line of lines) {
+                    const [code, hiddenWord, targetWord] = line.split(',');
+                    if (code && hiddenWord && targetWord) {
+                        // Afișăm cuvântul cu caractere '*' la început
+                        resultDiv.innerHTML += `<p><strong>Cuvântul de ghicit:</strong> ${hiddenWord.trim()}</p>`;
+                        const attempts = identifyWord(hiddenWord.trim(), targetWord.trim());
+                        totalAttempts += attempts; // Adăugăm încercările la numărul total
+                        resultDiv.innerHTML += `<p>Cod: ${code}, Încercări: ${attempts}, Cuvânt ghicit: ${targetWord}</p>`;
+                    }
+                }
+
+                resultDiv.innerHTML += `<p>Numărul total de încercări: ${totalAttempts}</p>`; // Afișăm numărul total de încercări
+            };
+
+            reader.readAsText(file);
+        }
+
+        function identifyWord(hidden, target) {
+            const frequentLetters = 'EAIORTNSUL'; // Literele cele mai frecvente
+            const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.replace(/[EAIORTNSUL]/g, ''); // Restul alfabetului fără literele frecvente
+            let attempts = 0;
+            let currentGuess = hidden.replace(/[^*]/g, ''); // Numărăm doar caracterele '*'
+
+            function guessLetter(letters) {
+                for (const letter of letters) {
+                    attempts++;
+                    // Înlocuim primul '*' cu litera, dacă este în cuvântul țintă
+                    if (target.includes(letter)) {
+                        const index = hidden.indexOf('*');
+                        if (index !== -1) {
+                            hidden = hidden.substr(0, index) + letter + hidden.substr(index + 1);
+                            currentGuess = hidden.replace(/[^*]/g, ''); // Actualizăm încercarea curentă
+                        }
+                        break; // Ieşim din ciclu pentru a limita numărul de încercări
+                    }
+                }
+            }
+
+            // Mai întâi încercăm literele cele mai frecvente
+            guessLetter(frequentLetters);
+
+            // După ce terminăm cu literele frecvente, încercăm restul alfabetului
+            guessLetter(allLetters);
+
+            return attempts;
+        }
+    </script>
+</body>
+</html>
